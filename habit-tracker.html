@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg-secondary: #f7f7f5; --bg-tertiary: #f1efea;
+    --text: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #a0a0a0;
+    --border: rgba(0,0,0,0.1); --border-hover: rgba(0,0,0,0.2);
+    --radius-md: 8px; --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191919; --bg-secondary: #242424; --bg-tertiary: #2e2e2e;
+      --text: #e8e8e8; --text-secondary: #a0a0a0; --text-tertiary: #666666;
+      --border: rgba(255,255,255,0.1); --border-hover: rgba(255,255,255,0.2);
+    }
+  }
+  body { font-family: var(--font-sans); background: var(--bg-tertiary); min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  .ht-wrap { width: 100%; max-width: 640px; }
+  .ht-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px; }
+  .ht-title { font-size: 26px; font-weight: 600; color: var(--text); font-family: var(--font-serif); }
+  .ht-controls { display: flex; gap: 8px; align-items: center; }
+  select { font-size: 13px; padding: 6px 10px; border-radius: var(--radius-md); background: var(--bg); border: 0.5px solid var(--border-hover); color: var(--text); cursor: pointer; font-family: var(--font-sans); }
+  select:focus { outline: none; border-color: var(--text-secondary); }
+  .add-btn { font-size: 13px; padding: 6px 14px; border-radius: var(--radius-md); cursor: pointer; background: var(--bg); border: 0.5px solid var(--border-hover); color: var(--text); font-family: var(--font-sans); }
+  .add-btn:hover { background: var(--bg-secondary); }
+  .period-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
+  .habit-list { display: flex; flex-direction: column; gap: 10px; }
+  .habit-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; transition: border-color 0.15s; }
+  .habit-card:hover { border-color: var(--border-hover); }
+  .habit-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .habit-name { font-size: 15px; font-weight: 500; color: var(--text); flex: 1; }
+  .habit-meta { font-size: 12px; color: var(--text-secondary); }
+  .habit-del { font-size: 15px; color: var(--text-tertiary); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+  .habit-del:hover { background: #fee2e2; color: #b91c1c; }
+  .progress-row { display: flex; align-items: center; gap: 10px; }
+  .prog-bar-bg { flex: 1; height: 6px; border-radius: 99px; background: var(--bg-secondary); overflow: hidden; }
+  .prog-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease; }
+  .prog-count { font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); min-width: 42px; text-align: right; }
+  .checks-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .check-dot { width: 26px; height: 26px; border-radius: 6px; border: 0.5px solid var(--border-hover); background: var(--bg-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; color: var(--text-tertiary); user-select: none; }
+  .check-dot.done { border-color: transparent; color: white; }
+  .check-dot:hover { border-color: var(--text-secondary); }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 14px; }
+  .add-form { background: var(--bg-secondary); border-radius: var(--radius-lg); border: 0.5px solid var(--border-hover); padding: 16px; margin-bottom: 12px; }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+  .form-row:last-child { margin-bottom: 0; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  input[type="text"], input[type="number"] { font-size: 14px; padding: 6px 10px; border-radius: var(--radius-md); background: var(--bg); border: 0.5px solid var(--border-hover); color: var(--text); font-family: var(--font-sans); }
+  input[type="text"]:focus, input[type="number"]:focus { outline: none; border-color: var(--text-secondary); }
+  input[type="text"].name-input { min-width: 180px; }
+  input[type="number"].count-input { width: 70px; }
+  .color-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .color-swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+  .color-swatch.active { border-color: var(--text); }
+  .save-btn { font-size: 13px; padding: 6px 16px; border-radius: var(--radius-md); cursor: pointer; background: var(--text); border: none; color: var(--bg); font-family: var(--font-sans); }
+  .save-btn:hover { opacity: 0.85; }
+  .cancel-btn { font-size: 13px; padding: 6px 12px; border-radius: var(--radius-md); cursor: pointer; background: none; border: 0.5px solid var(--border-hover); color: var(--text-secondary); font-family: var(--font-sans); }
+  .cancel-btn:hover { background: var(--bg); }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div class="ht-wrap" id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState } = React;
+const COLORS = [
+  { fill:'#1D9E75' },{ fill:'#378ADD' },{ fill:'#7F77DD' },
+  { fill:'#D85A30' },{ fill:'#EF9F27' },{ fill:'#D4537E' },
+];
+const PERIODS = ['day','week','month'];
+function todayKey() { return new Date().toISOString().slice(0,10); }
+function weekKeys() {
+  const d=new Date(),day=d.getDay(),mon=new Date(d);
+  mon.setDate(d.getDate()-((day+6)%7));
+  return Array.from({length:7},(_,i)=>{ const dd=new Date(mon); dd.setDate(mon.getDate()+i); return dd.toISOString().slice(0,10); });
+}
+function monthKeys() {
+  const d=new Date(),y=d.getFullYear(),m=d.getMonth(),days=new Date(y,m+1,0).getDate();
+  return Array.from({length:days},(_,i)=>`${y}-${String(m+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
+}
+function getPeriodKeys(p){ return p==='day'?[todayKey()]:p==='week'?weekKeys():monthKeys(); }
+function getTarget(habit,period){
+  const{count,per}=habit.freq;
+  if(per===period)return count;
+  if(per==='day'){ if(period==='week')return count*7; if(period==='month')return count*new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate(); }
+  if(per==='week'){ if(period==='day')return Math.ceil(count/7); if(period==='month')return count*4; }
+  if(per==='month'){ if(period==='day')return Math.ceil(count/30); if(period==='week')return Math.ceil(count/4); }
+  return count;
+}
+function getCompletions(habit,period){ return getPeriodKeys(period).reduce((s,k)=>s+(habit.completions[k]||0),0); }
+function periodLabel(period){
+  if(period==='day')return 'Today — '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  if(period==='week'){ const wk=weekKeys(),fmt=d=>new Date(d+'T00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}); return `This week — ${fmt(wk[0])} to ${fmt(wk[6])}`; }
+  return 'This month — '+new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+}
+const DEFAULTS=[
+  {id:1,name:'Morning run',freq:{count:3,per:'week'},color:COLORS[0],completions:{}},
+  {id:2,name:'Drink water',freq:{count:8,per:'day'},color:COLORS[1],completions:{}},
+  {id:3,name:'Read',freq:{count:1,per:'day'},color:COLORS[2],completions:{}},
+];
+function CheckDots({habit,period,onToggle}){
+  const target=getTarget(habit,period),current=getCompletions(habit,period),dots=Math.min(target,40);
+  return React.createElement('div',{className:'checks-row'},
+    Array.from({length:dots},(_,i)=>React.createElement('div',{key:i,className:'check-dot'+(i<current?' done':''),
+      style:i<current?{background:habit.color.fill}:{},onClick:()=>onToggle(habit.id,period,i<current?i:i+1),
+      title:i<current?'Click to uncheck':'Click to check'},i<current?'✓':''))
+  );
+}
+function HabitCard({habit,period,onDelete,onToggle}){
+  const target=getTarget(habit,period),current=getCompletions(habit,period),pct=target>0?Math.min(100,Math.round((current/target)*100)):0,done=current>=target;
+  return React.createElement('div',{className:'habit-card'},
+    React.createElement('div',{className:'habit-top'},
+      React.createElement('span',{className:'habit-name'},habit.name),
+      React.createElement('span',{className:'habit-meta'},`${habit.freq.count}× / ${habit.freq.per}`),
+      React.createElement('button',{className:'habit-del',onClick:()=>onDelete(habit.id),title:'Remove'},'×')
+    ),
+    React.createElement('div',{className:'progress-row'},
+      React.createElement('div',{className:'prog-bar-bg'},React.createElement('div',{className:'prog-bar-fill',style:{width:pct+'%',background:habit.color.fill,opacity:done?1:0.75}})),
+      React.createElement('span',{className:'prog-count',style:{color:done?habit.color.fill:undefined}},`${current}/${target}`)
+    ),
+    React.createElement(CheckDots,{habit,period,onToggle})
+  );
+}
+function AddForm({onSave,onCancel}){
+  const[name,setName]=useState('');const[count,setCount]=useState(1);const[per,setPer]=useState('day');const[colorIdx,setColorIdx]=useState(0);
+  function save(){ if(!name.trim())return; onSave({name:name.trim(),freq:{count:Math.max(1,count),per},color:COLORS[colorIdx]}); }
+  return React.createElement('div',{className:'add-form'},
+    React.createElement('div',{className:'form-row'},
+      React.createElement('div',{className:'field-group',style:{flex:2,minWidth:160}},
+        React.createElement('span',{className:'field-label'},'Habit name'),
+        React.createElement('input',{type:'text',className:'name-input',value:name,onChange:e=>setName(e.target.value),placeholder:'e.g. Meditate',autoFocus:true,
+          onKeyDown:e=>{if(e.key==='Enter')save();if(e.key==='Escape')onCancel();}})
+      ),
+      React.createElement('div',{className:'field-group',style:{width:70}},
+        React.createElement('span',{className:'field-label'},'Times'),
+        React.createElement('input',{type:'number',className:'count-input',value:count,min:1,max:100,onChange:e=>setCount(parseInt(e.target.value)||1)})
+      ),
+      React.createElement('div',{className:'field-group',style:{width:100}},
+        React.createElement('span',{className:'field-label'},'Per'),
+        React.createElement('select',{value:per,onChange:e=>setPer(e.target.value)},PERIODS.map(p=>React.createElement('option',{key:p,value:p},p)))
+      )
+    ),
+    React.createElement('div',{className:'form-row',style:{justifyContent:'space-between',alignItems:'center'}},
+      React.createElement('div',{className:'field-group'},
+        React.createElement('span',{className:'field-label'},'Color'),
+        React.createElement('div',{className:'color-picker'},COLORS.map((c,i)=>React.createElement('div',{key:i,className:'color-swatch'+(i===colorIdx?' active':''),style:{background:c.fill},onClick:()=>setColorIdx(i)})))
+      ),
+      React.createElement('div',{className:'btn-row'},
+        React.createElement('button',{className:'cancel-btn',onClick:onCancel},'Cancel'),
+        React.createElement('button',{className:'save-btn',onClick:save},'Add habit')
+      )
+    )
+  );
+}
+function App(){
+  const[period,setPeriod]=useState('day');const[habits,setHabits]=useState(DEFAULTS);const[adding,setAdding]=useState(false);const[nextId,setNextId]=useState(10);
+  function handleToggle(id,period,newVal){
+    setHabits(hs=>hs.map(h=>{
+      if(h.id!==id)return h;
+      const keys=getPeriodKeys(period),today=todayKey(),newComp={...h.completions};
+      if(period==='day'){ newComp[today]=newVal; }
+      else{
+        const cur=getCompletions(h,period),diff=newVal-cur;
+        if(diff>0){ newComp[today]=(newComp[today]||0)+diff; }
+        else{ let rem=-diff; for(let i=keys.length-1;i>=0&&rem>0;i--){ const k=keys[i],take=Math.min(newComp[k]||0,rem); newComp[k]=(newComp[k]||0)-take; rem-=take; } }
+      }
+      return{...h,completions:newComp};
+    }));
+  }
+  function handleDelete(id){ setHabits(hs=>hs.filter(h=>h.id!==id)); }
+  function handleSave(data){ setHabits(hs=>[...hs,{id:nextId,...data,completions:{}}]); setNextId(n=>n+1); setAdding(false); }
+  const totalDone=habits.filter(h=>getCompletions(h,period)>=getTarget(h,period)).length;
+  return React.createElement('div',{className:'ht-wrap'},
+    React.createElement('div',{className:'ht-header'},
+      React.createElement('span',{className:'ht-title'},'Habits'),
+      React.createElement('div',{className:'ht-controls'},
+        React.createElement('select',{value:period,onChange:e=>setPeriod(e.target.value)},
+          React.createElement('option',{value:'day'},'1 day'),
+          React.createElement('option',{value:'week'},'1 week'),
+          React.createElement('option',{value:'month'},'1 month')
+        ),
+        React.createElement('button',{className:'add-btn',onClick:()=>setAdding(a=>!a)},adding?'− Cancel':'+ Add habit')
+      )
+    ),
+    React.createElement('p',{className:'period-label'},periodLabel(period)+(habits.length>0?` · ${totalDone}/${habits.length} complete`:'')),
+    adding&&React.createElement(AddForm,{onSave:handleSave,onCancel:()=>setAdding(false)}),
+    habits.length===0
+      ?React.createElement('div',{className:'empty-state'},'No habits yet. Add one above.')
+      :React.createElement('div',{className:'habit-list'},habits.map(h=>React.createElement(HabitCard,{key:h.id,habit:h,period,onDelete:handleDelete,onToggle:handleToggle})))
+  );
+}
+ReactDOM.render(React.createElement(App),document.getElementById('app'));
+</script>
+</body>
+</html>
